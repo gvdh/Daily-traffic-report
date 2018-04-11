@@ -41,7 +41,7 @@ class Reversing
   end
 
   def getting_ips
-    nordvpn_fr_recommandations = Net::HTTP.get(URI.parse(URI.encode("https://nordvpn.com/wp-admin/admin-ajax.php?action=servers_recommendations&filters={%22country_id%22:74,%22servers_groups%22:[11],%22servers_technologies%22:[9]}&lang=fr")))
+    nordvpn_fr_recommandations = Net::HTTP.get(URI.parse("https://nordvpn.com/wp-admin/admin-ajax.php?action=servers_recommendations&filters={%22country_id%22:74,%22servers_groups%22:[11],%22servers_technologies%22:[9]}&lang=fr"))
     nordvpn_fr_recommandations_parsed = JSON.parse(nordvpn_fr_recommandations)
     nordvpn_fr_recommandations_parsed.each { |server| @ips << 'http://' + server['hostname'] }
   end
