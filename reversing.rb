@@ -6,8 +6,8 @@ require 'nokogiri'
 require 'google_drive'
 
 POSITIONS = [['CTO'], ['CEO']]
-PROXY_USERNAME = 'YOUR USERNAME'
-PROXY_PASSWORD = 'YOUR PASSWORD'
+PROXY_USERNAME = 'YOUR_USERNAME'
+PROXY_PASSWORD = 'YOUR_PASSWORD'
 
 class Reversing
 
@@ -15,7 +15,6 @@ class Reversing
     @index = 0
     @companies = []
     @ips = []
-    puts "Initializing..."
     sheets = parsing_spreadsheets
     getting_ips
     going_through_regex(sheets[0], sheets[1])
@@ -28,8 +27,8 @@ class Reversing
 
   def parsing_spreadsheets
     session = GoogleDrive::Session.from_config("config.json")
-    ws = session.spreadsheet_by_key('YOUR KEY URL').worksheets[1]
-    ns = session.spreadsheet_by_key('YOUR KEY URL').worksheets[2]
+    ws = session.spreadsheet_by_key('YOUR_URL_KEY').worksheets[1]
+    ns = session.spreadsheet_by_key('YOUR_URL_KEY').worksheets[2]
     ns.delete_rows(1, ns.max_rows)
     ns[1, 1] = 'Service provider'
     ns[1, 2] = 'Guessed domain'
@@ -65,7 +64,7 @@ class Reversing
         doc.search('.r > a').first(1).each do |url|
           parsed_url = url.attr('href').match(/^(?:https?:)?(?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/)
           clearbit = JSON.parse(open("https://autocomplete.clearbit.com/v1/companies/suggest?query=#{parsed_url[1]}").read)
-          unless clearbit.empty? || clearbit.first['name'].match(/Bloomberg|Zauba Technologies|Société 2015|D&B Hoovers|RIPE NCC/)
+          unless clearbit.empty? || clearbit.first['name'].match(/Bloomberg|Zauba Technologies|Société 2015|D&B Hoovers|RIPE NCC|IPInfo/)
             company.merge!({
               name: clearbit.first['name'],
               domain: clearbit.first['domain']
@@ -96,9 +95,9 @@ class Reversing
           retries += 1
           @index == @ips.size ? @index = 0 : @index += 1
           sleep(150)
-          retry if retries < 10
+         retry if retries < 10
         end
-        company.merge!({ "#{position.first}".to_sym => doc.search('.r').text().scan(/(.*?)(?=[-|])/).first.first})
+        company.merge!({ "#{position.first}".to_sym => doc.search('.r').text().scan(/(.*?)(?=[-|])/).first.first}) unless doc.search('.r').text().scan(/(.*?)(?=[-|])/).first.nil?
         sleep(150)
       end
     end
@@ -137,7 +136,7 @@ class Reversing
   def searching_through_voilanorbert(company, position)
     uri = URI.parse("https://api.voilanorbert.com/2016-01-04/search/name")
     request = Net::HTTP::Post.new(uri)
-    request.basic_auth('YOUR NAME', 'YOUR API KEY')
+    request.basic_auth('YOUR_NAME', 'YOUR_API_KEY')
     request.body = "domain=#{company[:domain]}&name=#{company[position.first.to_sym]}"
     req_options = {
       use_ssl: uri.scheme == "https",
