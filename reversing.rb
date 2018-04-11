@@ -27,8 +27,8 @@ class Reversing
 
   def parsing_spreadsheets
     session = GoogleDrive::Session.from_config("config.json")
-    ws = session.spreadsheet_by_key('YOUR_URL_KEY').worksheets[1]
-    ns = session.spreadsheet_by_key('YOUR_URL_KEY').worksheets[2]
+    ws = session.spreadsheet_by_key("YOUR_URL_KEY").worksheets[1]
+    ns = session.spreadsheet_by_key("YOUR_URL_KEY").worksheets[2]
     ns.delete_rows(1, ns.max_rows)
     ns[1, 1] = 'Service provider'
     ns[1, 2] = 'Guessed domain'
@@ -41,8 +41,9 @@ class Reversing
   end
 
   def getting_ips
-    nordvpn_fr_recommandations = JSON.parse(open("https://nordvpn.com/wp-admin/admin-ajax.php?action=servers_recommendations&filters={%22country_id%22:74,%22servers_groups%22:[11],%22servers_technologies%22:[9]}&lang=fr").read)
-    nordvpn_fr_recommandations.each { |server| @ips << 'http://' + server['hostname'] }
+    nordvpn_fr_recommandations = Net::HTTP.get(URI.parse(URI.encode("https://nordvpn.com/wp-admin/admin-ajax.php?action=servers_recommendations&filters={%22country_id%22:74,%22servers_groups%22:[11],%22servers_technologies%22:[9]}&lang=fr")))
+    nordvpn_fr_recommandations_parsed = JSON.parse(nordvpn_fr_recommandations)
+    nordvpn_fr_recommandations_parsed.each { |server| @ips << 'http://' + server['hostname'] }
   end
 
   def going_through_regex(ws, ns)
@@ -103,7 +104,7 @@ class Reversing
     end
   end
 
-  def searching_mails
+   def searching_mails
     POSITIONS.each do |position|
       @companies.select {|company| company[position.first.to_sym] }.each do |company|
         retries = 0
@@ -121,22 +122,22 @@ class Reversing
             response = Net::HTTP.get_response(uri)
             response.each { |header| company.merge!({ "#{position}_mail".to_sym => mail }) if header == 'set-cookie' }
             break if company["#{position}_mail".to_sym]
+          end
         rescue
            retries += 1
            @index == (@ips.size - 1) ? @index = 0 : @index += 1
            sleep(150)
           retry if retries < 10
         end
-      end
-        searching_through_voilanorbert(company, position) unless company["#{position}_mail".to_sym]
+        # searching_through_voilanorbert(company, position) unless company["#{position}_mail".to_sym]
       end
     end
   end
-  
+
   def searching_through_voilanorbert(company, position)
     uri = URI.parse("https://api.voilanorbert.com/2016-01-04/search/name")
     request = Net::HTTP::Post.new(uri)
-    request.basic_auth('YOUR_NAME', 'YOUR_API_KEY')
+    request.basic_auth("YOUR_NAME", "YOUR_API_KEY")
     request.body = "domain=#{company[:domain]}&name=#{company[position.first.to_sym]}"
     req_options = {
       use_ssl: uri.scheme == "https",
@@ -148,6 +149,7 @@ class Reversing
       company.merge!({"#{position}_mail".to_sym => JSON.parse(response.body)["email"]["email"]})
     end 
   end
+  
 
   def storing_spreadsheets(ws, ns)
     @companies.each do |company|
@@ -158,7 +160,7 @@ class Reversing
   end
 
   def sending_report
-    uri = URI.parse('YOUR WEB APP URL')
+    uri = URI.parse("YOUR_WEB_APP_URL")
     Net::HTTP.get(uri)
   end
 
