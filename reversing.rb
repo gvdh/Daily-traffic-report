@@ -125,10 +125,11 @@ class Reversing
           end
         rescue
            retries += 1
-           @index == (@ips.size - 1) ? @index = 0 : @index += 1
+           @index == @ips.size ? @index = 0 : @index += 1
            sleep(150)
           retry if retries < 10
         end
+        # Uncomment line below if you want to make requests on Voilanorbert's API when mail recognition above failed.
         # searching_through_voilanorbert(company, position) unless company["#{position}_mail".to_sym]
       end
     end
