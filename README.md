@@ -5,17 +5,17 @@ Get a daily report sent by e-mail based on the traffic of the day before.
 
 # SQL TABLE
 
-CREATE TABLE reversed (
-	original_name VARCHAR(40),
-	name VARCHAR(80),
-	domain VARCHAR(80),
-	position_1_name VARCHAR(80),
-	position_1_mail VARCHAR(80),
-	position_2_name VARCHAR(80),
-	position_2_mail VARCHAR(80),
-	number_of_visits SMALLINT,
-	pipedrive_url VARCHAR(80)
-);
+	CREATE TABLE reversed (
+		original_name VARCHAR(40),
+		name VARCHAR(80),
+		domain VARCHAR(80),
+		position_1_name VARCHAR(80),
+		position_1_mail VARCHAR(80),
+		position_2_name VARCHAR(80),
+		position_2_mail VARCHAR(80),
+		number_of_visits SMALLINT,
+		pipedrive_url VARCHAR(80)
+	);
 
 # Guidelines
 This repository is here to complete this medium article. It is open-source under the MIT license.
