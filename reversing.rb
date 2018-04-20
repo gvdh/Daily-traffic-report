@@ -7,8 +7,8 @@ require 'nokogiri'
 require 'google_drive'
 
 POSITIONS = ['CTO', 'CEO']
-PROXY_USERNAME = 'YOUR_USERNAME'
-PROXY_PASSWORD = 'YOUR_PASSWORD'
+PROXY_USERNAME = '{{YOUR_USER_NAME}}'
+PROXY_PASSWORD = '{{YOUR_PASSWORD}}'
 
 class Reversing
 
@@ -20,8 +20,7 @@ class Reversing
     getting_ips
     going_through_regex(sheets[0], sheets[1])
     searching_database
-    # uncomment below to make a pipedrive search from your account
-    # searching_pipedrive
+    searching_pipedrive
     searching_domains
     searching_names
     searching_mails
@@ -32,8 +31,8 @@ class Reversing
 
   def parsing_spreadsheets
     session = GoogleDrive::Session.from_config("config.json")
-    ws = session.spreadsheet_by_key("SPREADSHEET_KEY").worksheets[1]
-    ns = session.spreadsheet_by_key("SPREADSHEET_KEY").worksheets[2]
+    ws = session.spreadsheet_by_key("{{YOUR_KEY_URL}}").worksheets[1]
+    ns = session.spreadsheet_by_key("{{YOUR_KEY_URL}}").worksheets[2]
     ns.delete_rows(1, ns.max_rows)
     ns[1, 1] = 'Original name'
     ns[1, 2] = 'Guessed name'
@@ -66,13 +65,14 @@ class Reversing
   end
 
   def searching_database
-    @from_db = []
-    @client = Mysql2::Client.new(:host => "localhost", :username => "YOUR_USERNAME", :password => "YOUR_PASSWORD", :database => "reversing")
+    @client = Mysql2::Client.new(:host => "localhost", :username => "{{YOUR_USERNAME}}", :password => "{{YOUR_PASSWORD}}", :database => "reversing")
+    counter = 0
     @companies.each do |company|
       result = @client.query("SELECT * FROM reversed WHERE original_name = '#{company[:original_name]}'")
       if result.size > 0 
-        company.merge!({found_in_db: true})
-        @from_db << result.first
+        company.merge!({found_in_db: 'sql'})
+        company.merge!(result.first)
+        counter += 1
       end
     end
   end
@@ -80,14 +80,23 @@ class Reversing
   def searching_pipedrive
     counter = 0
     @companies.each do |company|
-      name_without_suffixes = company[:original_name].gsub(/\b(\,?\s*)*(ltd|limited|inc(?:orporated)?|co(?:rp|mpany|rporation)?|p\.?[a|c]\.?|p?\.?(?:l?\.?){1,3}[c|p|a]\.?)(\.)*$/, '')
-      result = JSON.parse(Net::HTTP.get(URI.parse("https://api.pipedrive.com/v1/organizations/find?term=#{name_without_suffixes}&start=0&api_token=YOUR_API_KEY")))
-      if result["data"]
-        company.merge!({
-          found_in_db: true,
-          pipedrive_url: "https://YOUR_PIPE_DRIVE_ACCOUNT.pipedrive.com/organization/#{result["data"].first["id"]}"
-          })
-        counter += 1
+      unless company[:pipedrive_url]
+        name_without_suffixes = company[:original_name].gsub(/\b(\,?\s*)*(ltd|limited|inc(?:orporated)?|co(?:rp|mpany|rporation)?|p\.?[a|c]\.?|p?\.?(?:l?\.?){1,3}[c|p|a]\.?)(\.)*$|s.a./, '')
+        result = JSON.parse(Net::HTTP.get(URI.parse("https://api.pipedrive.com/v1/organizations/find?term=#{name_without_suffixes}&start=0&api_token={{YOUR_API_KEY}}")))
+        if result["data"]
+          company.merge!({
+            found_in_db: (company[:found_in_db] ? company[:found_in_db] : 'pipedrive' ),
+            name: (company[:name] ? company[:name] : '' ),
+            domain: (company[:domain] ? company[:domain] : '' ),
+            position_1_name: (company[:position_1_name] ? company[:position_1_name] : '' ),
+            position_1_mail: (company[:position_1_mail] ? company[:position_1_mail] : '' ),
+            position_2_name: (company[:position_2_name] ? company[:position_2_name] : '' ),
+            position_2_mail: (company[:position_2_mail] ? company[:position_2_mail] : '' ),
+            number_of_visits: (company[:number_of_visits] ? company[:number_of_visits] : 1 ),
+            pipedrive_url: "https://{{YOUR_COMPANY_NAME}}.pipedrive.com/organization/#{result["data"].first["id"]}"
+            })
+          counter += 1
+        end
       end
     end
   end
@@ -109,20 +118,29 @@ class Reversing
               })
               break
             else
+              company.merge!({
+                found_in_db: 'no_domain',
+                name: '', 
+                domain: '', 
+                position_1_name: '', 
+                position_1_mail: '', 
+                position_2_name: '', 
+                position_2_mail: '',
+                number_of_visits: '',
+                pipedrive_url: '',
+                })
             end
           end
-          @index == @ips.size ? @index = 0 : @index += 1
+          @index == (@ips.size - 1) ? @index = 0 : @index += 1
           sleep(150)
         rescue
           retries += 1
-          @index == @ips.size ? @index = 0 : @index += 1
+          @index == (@ips.size - 1) ? @index = 0 : @index += 1
           retry if retries < 10
         end
       end
     end
   end
-
-
 
   def searching_names
     @companies.select {|company| company[:domain] }.each do |company|
@@ -133,14 +151,19 @@ class Reversing
             @proxy_uri = URI.parse(@ips[@index])
             url = URI.parse(URI.encode("https://www.google.fr/search?q=#{company[:name]} #{position} site:linkedin.com"))
             doc = Nokogiri::HTML(open(url, proxy_http_basic_authentication: [@proxy_uri, PROXY_USERNAME, PROXY_PASSWORD], 'User-agent' => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.2 (KHTML, like Gecko) Chrome/15.0.854.0 Safari/535.2", 'read_timeout' => '10' ).read)
-            @index == @ips.size ? @index = 0 : @index += 1
+            @index == (@ips.size - 1) ? @index = 0 : @index += 1
           rescue
             retries += 1
-            @index == @ips.size ? @index = 0 : @index += 1
+            @index == (@ips.size - 1) ? @index = 0 : @index += 1
             sleep(150)
            retry if retries < 10
           end
-          company.merge!({ "position_#{index+1}_name".to_sym => doc.search('.r').text().scan(/(.*?)(?=[-|])/).first.first }) unless doc.search('.r').text().scan(/(.*?)(?=[-|])/).first.nil?
+          unless doc.search('.r').text().scan(/(.*?)(?=[-|])/).first.nil?
+            company.merge!({ 
+              "position_#{index+1}_name".to_sym => doc.search('.r').text().scan(/(.*?)(?=[-|])/).first.first,
+              "position_#{index+1}_mail".to_sym => ''  
+              })
+          end
           sleep(150)
         end
       end
@@ -167,15 +190,14 @@ class Reversing
               response.each { |header| company.merge!({ "position_#{index+1}_mail".to_sym => mail }) if header == 'set-cookie' }
               break if company["position_#{index+1}_mail".to_sym]
             end
+            @index == (@ips.size - 1) ? @index = 0 : @index += 1
           rescue
             retries += 1
-            @index == @ips.size ? @index = 0 : @index += 1
+            @index == (@ips.size - 1) ? @index = 0 : @index += 1
             sleep(150)
             retry if retries < 10
           end
-          ## Uncomment below to trigger a voilanorbert's api search if no mail has been found
           # searching_through_voilanorbert(company, position, index) unless company["position_#{index+1}_mail".to_sym]
-          company["position_#{index+1}_mail".to_sym] = '' unless company["position_#{index+1}_mail".to_sym] 
         end
       end
     end
@@ -184,7 +206,7 @@ class Reversing
   def searching_through_voilanorbert(company, position, index)
     uri = URI.parse("https://api.voilanorbert.com/2016-01-04/search/name")
     request = Net::HTTP::Post.new(uri)
-    request.basic_auth("YOUR_NAME", "YOUR_API_KEY")
+    request.basic_auth("{{YOUR_NAME}}", "{{YOUR_API_KEY}}")
     request.body = "domain=#{company[:domain]}&name=#{company["position_#{index+1}_name".to_sym]}"
     req_options = {
       use_ssl: uri.scheme == "https",
@@ -199,36 +221,29 @@ class Reversing
 
   def storing_database
     @companies.each do |company|
-      if company[:found_in_db]
-        @client.query("UPDATE reversed SET number_of_visits = number_of_visits + 1 WHERE original_name = '#{company}'")
-        @client.query("UPDATE reversed SET pipedrive_url = '#{company[:pipedrive_url]}'")
+      if company[:found_in_db] == 'sql'
+        @client.query("UPDATE reversed SET number_of_visits = number_of_visits + 1 WHERE original_name = '#{company[:original_name]}'")
+        @client.query("UPDATE reversed SET pipedrive_url = '#{company[:pipedrive_url]}' WHERE original_name = '#{company[:original_name]}'")
       else
         escaped_company = company
         escaped_company.each{ |k,v| escaped_company[k] = @client.escape(v) if v.is_a? String }
-        @client.query("INSERT INTO reversed (original_name, name, domain, position_1_name, position_1_mail, position_2_name, position_2_mail, number_of_visits) VALUES ('#{escaped_company[:original_name]}', '#{escaped_company[:name]}', '#{escaped_company[:domain]}', '#{escaped_company[:position_1_name]}', '#{escaped_company[:position_1_mail]}', '#{escaped_company[:position_2_name]}', '#{escaped_company[:position_2_mail]}', 1)");
+        @client.query("INSERT INTO reversed (original_name, name, domain, position_1_name, position_1_mail, position_2_name, position_2_mail, number_of_visits, pipedrive_url) VALUES ('#{escaped_company[:original_name]}', '#{escaped_company[:name]}', '#{escaped_company[:domain]}', '#{escaped_company[:position_1_name]}', '#{escaped_company[:position_1_mail]}', '#{escaped_company[:position_2_name]}', '#{escaped_company[:position_2_mail]}', 1, '#{escaped_company[:pipedrive_url]}')");
       end
     end
   end
 
   def storing_spreadsheets(ws, ns)
     @companies.each do |company|
-      unless company[:found_in_db]
-        ns_row = ns.max_rows + 1
-        company.values.each_with_index { |v, i| ns[ns_row, i + 1] = v }
-        ns.save
-      end
-    end
-
-    @from_db.each do |company|
+      company.delete(:found_in_db) if company[:found_in_db]
+      company[:number_of_visits] = 1 unless company[:number_of_visits].to_i >= 1
       ns_row = ns.max_rows + 1
       company.values.each_with_index { |v, i| ns[ns_row, i + 1] = v }
       ns.save
     end
-
   end
 
   def sending_report
-    uri = URI.parse("YOUR_WEB_APP_LINK")
+    uri = URI.parse("{{YOUR_WEB_APP_URL}}")
     Net::HTTP.get(uri)
   end
 
