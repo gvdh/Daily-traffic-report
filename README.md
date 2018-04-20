@@ -6,7 +6,7 @@ Get a daily report sent by e-mail based on the traffic of the day before.
 # SQL TABLE
 
 	CREATE TABLE reversed (
-		original_name VARCHAR(40),
+		original_name VARCHAR(80),
 		name VARCHAR(80),
 		domain VARCHAR(80),
 		position_1_name VARCHAR(80),
