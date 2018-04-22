@@ -13,9 +13,6 @@ PROXY_PASSWORD = '{{YOUR_PASSWORD}}'
 class Reversing
 
   def initialize
-    @index = 0
-    @companies = []
-    @ips = []
     sheets = parsing_spreadsheets
     getting_ips
     going_through_regex(sheets[0], sheets[1])
@@ -48,12 +45,15 @@ class Reversing
   end
 
   def getting_ips
+    @index = 0
+    @ips = []
     nordvpn_fr_recommandations = Net::HTTP.get(URI.parse("https://nordvpn.com/wp-admin/admin-ajax.php?action=servers_recommendations&filters={%22country_id%22:74,%22servers_groups%22:[11],%22servers_technologies%22:[9]}&lang=fr"))
     nordvpn_fr_recommandations_parsed = JSON.parse(nordvpn_fr_recommandations)
     nordvpn_fr_recommandations_parsed.each { |server| @ips << 'http://' + server['hostname'] }
   end
 
   def going_through_regex(ws, ns)
+    @companies = []    
     isp_regex = Net::HTTP.get(URI.parse("https://raw.githubusercontent.com/gvdh/Daily-traffic-report/master/isp_regex"))
     (16..ws.num_rows).each do |row|
       unless ws[row, 1].match(isp_regex)
