@@ -2,7 +2,6 @@
 require 'mysql2'
 require 'open-uri'
 require 'net/https'
-require 'uri'
 require 'nokogiri'
 require 'google_drive'
 
@@ -71,7 +70,8 @@ class Reversing
       result = @client.query("SELECT * FROM reversed WHERE original_name = '#{company[:original_name]}'")
       if result.size > 0 
         company.merge!({found_in_db: 'sql'})
-        company.merge!(result.first)
+        symbolized_company = result.first.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+        company.merge!(symbolized_company)
         counter += 1
       end
     end
