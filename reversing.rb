@@ -174,28 +174,19 @@ class Reversing
     POSITIONS.each_with_index do |position, index|
       @companies.select {|company| company["position_#{index+1}_name".to_sym] }.each do |company|
         unless company[:found_in_db]
-          retries = 0
-          begin
-            searched_name = company["position_#{index+1}_name".to_sym].split(" ")
-            if searched_name.size == 2
-              mails = ["#{searched_name[0]}@#{company[:domain]}", "#{searched_name[1]}@#{company[:domain]}", "#{searched_name[0]}.#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}.#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0]}#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0]}-#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}-#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0]}_#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}_#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}.#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}.#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}-#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}-#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}_#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}_#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}.#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}.#{searched_name[0][0]}@#{company[:domain]}", "#{searched_name[0][0]}#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}#{searched_name[0][0]}@#{company[:domain]}", "#{searched_name[0][0]}-#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}-#{searched_name[0][0]}@#{company[:domain]}", "#{searched_name[0][0]}_#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}_#{searched_name[0][0]}@#{company[:domain]}"] 
-            elsif searched_name.size == 1
-              mails = ["#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}@#{company[:domain]}"]
-            else 
-              mails = [] 
-            end
-            mails.each do |mail|
-              uri = URI.parse("https://mail.google.com/mail/gxlu?email=#{mail}")
-              response = Net::HTTP.get_response(uri)
-              response.each { |header| company.merge!({ "position_#{index+1}_mail".to_sym => mail }) if header == 'set-cookie' }
-              break if company["position_#{index+1}_mail".to_sym]
-            end
-            @index == (@ips.size - 1) ? @index = 0 : @index += 1
-          rescue
-            retries += 1
-            @index == (@ips.size - 1) ? @index = 0 : @index += 1
-            sleep(150)
-            retry if retries < 10
+          searched_name = company["position_#{index+1}_name".to_sym].split(" ")
+          if searched_name.size == 2
+            mails = ["#{searched_name[0]}@#{company[:domain]}", "#{searched_name[1]}@#{company[:domain]}", "#{searched_name[0]}.#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}.#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0]}#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0]}-#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}-#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0]}_#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1]}_#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}.#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}.#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}-#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}-#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}_#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}_#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}#{searched_name[1]}@#{company[:domain]}", "#{searched_name[1][0]}#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}.#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}.#{searched_name[0][0]}@#{company[:domain]}", "#{searched_name[0][0]}#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}#{searched_name[0][0]}@#{company[:domain]}", "#{searched_name[0][0]}-#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}-#{searched_name[0][0]}@#{company[:domain]}", "#{searched_name[0][0]}_#{searched_name[1][0]}@#{company[:domain]}", "#{searched_name[1][0]}_#{searched_name[0][0]}@#{company[:domain]}"] 
+          elsif searched_name.size == 1
+            mails = ["#{searched_name[0]}@#{company[:domain]}", "#{searched_name[0][0]}@#{company[:domain]}"]
+          else 
+            mails = [] 
+          end
+          mails.each do |mail|
+            uri = URI.parse("https://mail.google.com/mail/gxlu?email=#{mail}")
+            response = Net::HTTP.get_response(uri)
+            response.each { |header| company.merge!({ "position_#{index+1}_mail".to_sym => mail }) if header == 'set-cookie' }
+            break if company["position_#{index+1}_mail".to_sym]
           end
           # searching_through_voilanorbert(company, position, index) unless company["position_#{index+1}_mail".to_sym]
         end
