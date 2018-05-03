@@ -149,7 +149,7 @@ class Reversing
           retries = 0
           begin
             @proxy_uri = URI.parse(@ips[@index])
-            url = URI.parse(URI.encode("https://www.google.fr/search?q=#{company[:name]} #{position} site:linkedin.com"))
+            url = URI.parse(URI.encode("https://www.google.fr/search?q=#{company[:name]} #{position} site:linkedin.com/in/"))
             doc = Nokogiri::HTML(open(url, proxy_http_basic_authentication: [@proxy_uri, PROXY_USERNAME, PROXY_PASSWORD], 'User-agent' => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.2 (KHTML, like Gecko) Chrome/15.0.854.0 Safari/535.2", 'read_timeout' => '10' ).read)
             @index == (@ips.size - 1) ? @index = 0 : @index += 1
           rescue
