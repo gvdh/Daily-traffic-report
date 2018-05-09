@@ -4,10 +4,12 @@ require 'open-uri'
 require 'net/https'
 require 'nokogiri'
 require 'google_drive'
+require 'i18n'
 
 POSITIONS = ['CTO', 'CEO']
 PROXY_USERNAME = '{{YOUR_USER_NAME}}'
 PROXY_PASSWORD = '{{YOUR_PASSWORD}}'
+I18n.available_locales = [:en]
 
 class Reversing
 
@@ -183,7 +185,7 @@ class Reversing
             mails = [] 
           end
           mails.each do |mail|
-            uri = URI.parse("https://mail.google.com/mail/gxlu?email=#{mail}")
+            uri = URI.parse(I18n.transliterate("https://mail.google.com/mail/gxlu?email=#{mail}"))
             response = Net::HTTP.get_response(uri)
             response.each { |header| company.merge!({ "position_#{index+1}_mail".to_sym => mail }) if header == 'set-cookie' }
             break if company["position_#{index+1}_mail".to_sym]
