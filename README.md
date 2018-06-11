@@ -18,7 +18,7 @@ Get a daily report sent by e-mail based on the traffic of the day before.
 	);
 
 # Guidelines
-This repository is here to complete this medium article. It is open-source under the MIT license.
+This repository is here to complete [this medium article](https://medium.com/growth-france/lip-reverse-exploitez-votre-trafic-non-converti-c057a2f8a77c). It is open-source under the MIT license.
 
 # Submitting a pull request
 
